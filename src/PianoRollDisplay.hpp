@@ -44,7 +44,292 @@ namespace Colors {
     inline NVGcolor withAlpha(NVGcolor c, float a) {
         return nvgRGBAf(c.r, c.g, c.b, a);
     }
+
+    // LED display colors
+    inline NVGcolor ledOn()  { return nvgRGB(0xff, 0x44, 0x00); }  // Bright amber/orange
+    inline NVGcolor ledOff() { return nvgRGB(0x30, 0x18, 0x08); }  // Dim amber (off segments)
+    inline NVGcolor ledGlow() { return nvgRGBA(0xff, 0x66, 0x00, 0x40); }  // Glow effect
 }
+
+//-----------------------------------------------------------------------------
+// LED Segment Display - 14-segment style for text display
+//-----------------------------------------------------------------------------
+// Displays text using LED-style segments. Supports A-Z, 0-9, space, #, -.
+// Each character is drawn as illuminated segments for that classic hardware look.
+//-----------------------------------------------------------------------------
+
+struct LEDSegmentDisplay : widget::OpaqueWidget {
+    std::string text = "";
+    float charWidth = 10.f;
+    float charHeight = 16.f;
+    float charSpacing = 2.f;
+    bool centerText = true;
+
+    // 14-segment encoding for each character
+    // Segments: 0=top, 1=topRight, 2=botRight, 3=bot, 4=botLeft, 5=topLeft
+    //           6=midLeft, 7=midRight, 8=topLeftDiag, 9=topRightDiag
+    //           10=botLeftDiag, 11=botRightDiag, 12=topMid, 13=botMid
+
+    void drawCharacter(NVGcontext* vg, float x, float y, char c) {
+        // Segment positions relative to character origin
+        float w = charWidth;
+        float h = charHeight;
+        float hw = w / 2;
+        float hh = h / 2;
+        float t = 1.5f;  // Segment thickness
+
+        // Get segment mask for character
+        uint16_t segments = getSegments(c);
+
+        auto drawSegment = [&](int seg) {
+            bool on = (segments >> seg) & 1;
+            nvgFillColor(vg, on ? Colors::ledOn() : Colors::ledOff());
+
+            // Add glow for lit segments
+            if (on) {
+                nvgBeginPath(vg);
+                switch (seg) {
+                    case 0:  // Top horizontal
+                        nvgRoundedRect(vg, x + t, y, w - 2*t, t, t/2);
+                        break;
+                    case 1:  // Top right vertical
+                        nvgRoundedRect(vg, x + w - t, y + t, t, hh - t, t/2);
+                        break;
+                    case 2:  // Bottom right vertical
+                        nvgRoundedRect(vg, x + w - t, y + hh, t, hh - t, t/2);
+                        break;
+                    case 3:  // Bottom horizontal
+                        nvgRoundedRect(vg, x + t, y + h - t, w - 2*t, t, t/2);
+                        break;
+                    case 4:  // Bottom left vertical
+                        nvgRoundedRect(vg, x, y + hh, t, hh - t, t/2);
+                        break;
+                    case 5:  // Top left vertical
+                        nvgRoundedRect(vg, x, y + t, t, hh - t, t/2);
+                        break;
+                    case 6:  // Middle left horizontal
+                        nvgRoundedRect(vg, x + t, y + hh - t/2, hw - t, t, t/2);
+                        break;
+                    case 7:  // Middle right horizontal
+                        nvgRoundedRect(vg, x + hw, y + hh - t/2, hw - t, t, t/2);
+                        break;
+                    case 12: // Top middle vertical
+                        nvgRoundedRect(vg, x + hw - t/2, y + t, t, hh - t, t/2);
+                        break;
+                    case 13: // Bottom middle vertical
+                        nvgRoundedRect(vg, x + hw - t/2, y + hh, t, hh - t, t/2);
+                        break;
+                    // Diagonals (8, 9, 10, 11) - simplified as small lines
+                    case 8:  // Top left diagonal
+                        nvgMoveTo(vg, x + t, y + t);
+                        nvgLineTo(vg, x + hw - t/2, y + hh - t/2);
+                        nvgStrokeColor(vg, Colors::ledOn());
+                        nvgStrokeWidth(vg, t);
+                        nvgStroke(vg);
+                        return;
+                    case 9:  // Top right diagonal
+                        nvgMoveTo(vg, x + w - t, y + t);
+                        nvgLineTo(vg, x + hw + t/2, y + hh - t/2);
+                        nvgStrokeColor(vg, Colors::ledOn());
+                        nvgStrokeWidth(vg, t);
+                        nvgStroke(vg);
+                        return;
+                    case 10: // Bottom left diagonal
+                        nvgMoveTo(vg, x + t, y + h - t);
+                        nvgLineTo(vg, x + hw - t/2, y + hh + t/2);
+                        nvgStrokeColor(vg, Colors::ledOn());
+                        nvgStrokeWidth(vg, t);
+                        nvgStroke(vg);
+                        return;
+                    case 11: // Bottom right diagonal
+                        nvgMoveTo(vg, x + w - t, y + h - t);
+                        nvgLineTo(vg, x + hw + t/2, y + hh + t/2);
+                        nvgStrokeColor(vg, Colors::ledOn());
+                        nvgStrokeWidth(vg, t);
+                        nvgStroke(vg);
+                        return;
+                }
+                nvgFill(vg);
+            }
+        };
+
+        // Draw all 14 segments
+        for (int i = 0; i < 14; i++) {
+            drawSegment(i);
+        }
+    }
+
+    uint16_t getSegments(char c) {
+        // 14-segment encoding
+        // Bits: 0=top, 1=TR, 2=BR, 3=bot, 4=BL, 5=TL, 6=ML, 7=MR, 8=TLD, 9=TRD, 10=BLD, 11=BRD, 12=TM, 13=BM
+        switch (toupper(c)) {
+            case '0': return 0b00000000111111;  // No diagonals, outer ring
+            case '1': return 0b00000000000110;
+            case '2': return 0b00000011011011;
+            case '3': return 0b00000011001111;
+            case '4': return 0b00000011100110;
+            case '5': return 0b00000011101101;
+            case '6': return 0b00000011111101;
+            case '7': return 0b00000000000111;
+            case '8': return 0b00000011111111;
+            case '9': return 0b00000011101111;
+
+            case 'A': return 0b00000011110111;
+            case 'B': return 0b10010011001111;
+            case 'C': return 0b00000000111001;
+            case 'D': return 0b10010000001111;
+            case 'E': return 0b00000011111001;
+            case 'F': return 0b00000011110001;
+            case 'G': return 0b00000010111101;
+            case 'H': return 0b00000011110110;
+            case 'I': return 0b10010000001001;
+            case 'J': return 0b00000000011110;
+            case 'K': return 0b00110011110000;
+            case 'L': return 0b00000000111000;
+            case 'M': return 0b00000100110110;  // Using diagonals differently
+            case 'N': return 0b00100100110110;
+            case 'O': return 0b00000000111111;
+            case 'P': return 0b00000011110011;
+            case 'Q': return 0b00100000111111;
+            case 'R': return 0b00100011110011;
+            case 'S': return 0b00000011101101;
+            case 'T': return 0b10010000000001;
+            case 'U': return 0b00000000111110;
+            case 'V': return 0b01001000110000;
+            case 'W': return 0b01100000110110;
+            case 'X': return 0b01101100000000;
+            case 'Y': return 0b10001100000000;
+            case 'Z': return 0b01001000001001;
+
+            case '-': return 0b00000011000000;
+            case '#': return 0b10010011000110;
+            case ' ':
+            default:  return 0b00000000000000;
+        }
+    }
+
+    void draw(const DrawArgs& args) override {
+        NVGcontext* vg = args.vg;
+
+        // Background
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 3);
+        nvgFillColor(vg, nvgRGB(0x0a, 0x0a, 0x0a));
+        nvgFill(vg);
+        nvgStrokeColor(vg, Colors::gray80());
+        nvgStrokeWidth(vg, 1);
+        nvgStroke(vg);
+
+        // Calculate starting position
+        float totalWidth = text.length() * (charWidth + charSpacing) - charSpacing;
+        float startX = centerText ? (box.size.x - totalWidth) / 2 : 4;
+        float startY = (box.size.y - charHeight) / 2;
+
+        // Draw each character
+        for (size_t i = 0; i < text.length(); i++) {
+            float x = startX + i * (charWidth + charSpacing);
+            drawCharacter(vg, x, startY, text[i]);
+        }
+
+        OpaqueWidget::draw(args);
+    }
+};
+
+//-----------------------------------------------------------------------------
+// ScaleDisplay - Shows current root note and scale name
+//-----------------------------------------------------------------------------
+
+struct ScaleDisplay : widget::OpaqueWidget {
+    Module* module = nullptr;
+    Scale* scalePtr = nullptr;
+    int* rootNotePtr = nullptr;
+
+    static constexpr const char* NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+    // Abbreviated scale names to fit display
+    static const char* getScaleAbbrev(Scale scale) {
+        switch (scale) {
+            case Scale::MAJOR: return "MAJOR";
+            case Scale::MINOR: return "MINOR";
+            case Scale::DORIAN: return "DORIAN";
+            case Scale::MIXOLYDIAN: return "MIXO";
+            case Scale::LYDIAN: return "LYDIAN";
+            case Scale::PHRYGIAN: return "PHRYG";
+            case Scale::LOCRIAN: return "LOCRIAN";
+            case Scale::HARMONIC_MINOR: return "H-MIN";
+            case Scale::HARMONIC_MAJOR: return "H-MAJ";
+            case Scale::DORIAN_NR_4: return "DOR-4";
+            case Scale::PHRYGIAN_DOMINANT: return "PH-DOM";
+            case Scale::MELODIC_MINOR: return "M-MIN";
+            case Scale::LYDIAN_AUGMENTED: return "LYD-A";
+            case Scale::LYDIAN_DOMINANT: return "LYD-D";
+            case Scale::HUNGARIAN_MINOR: return "HUNG";
+            case Scale::SUPER_LOCRIAN: return "S-LOC";
+            case Scale::SPANISH: return "SPAIN";
+            case Scale::BHAIRAV: return "BHAIRV";
+            case Scale::PENTATONIC_MINOR: return "PENTA";
+            case Scale::PENTATONIC_MAJOR: return "PEN-M";
+            case Scale::BLUES_MINOR: return "BLUES";
+            case Scale::WHOLE_TONE: return "WHOLE";
+            case Scale::CHROMATIC: return "CHROM";
+            case Scale::JAPANESE_IN_SEN: return "INSEN";
+            default: return "---";
+        }
+    }
+
+    void draw(const DrawArgs& args) override {
+        NVGcontext* vg = args.vg;
+
+        Scale scale = scalePtr ? *scalePtr : Scale::MINOR;
+        int rootNote = rootNotePtr ? *rootNotePtr : 0;
+
+        // Get display strings
+        const char* noteName = NOTE_NAMES[rootNote % 12];
+        const char* scaleName = getScaleAbbrev(scale);
+
+        float rowHeight = box.size.y / 2;
+
+        // Scale character sizes based on available space
+        float noteCharW = 14.f;
+        float noteCharH = rowHeight - 6.f;
+        float scaleCharW = (box.size.x - 10.f) / 7.f;  // Fit up to 7 chars
+        float scaleCharH = rowHeight - 6.f;
+
+        // Root note (top row)
+        {
+            LEDSegmentDisplay noteDisp;
+            noteDisp.text = noteName;
+            noteDisp.charWidth = noteCharW;
+            noteDisp.charHeight = noteCharH;
+            noteDisp.charSpacing = 2.f;
+            noteDisp.box.size = Vec(box.size.x, rowHeight);
+            noteDisp.box.pos = Vec(0, 0);
+
+            nvgSave(vg);
+            nvgTranslate(vg, 0, 2);
+            noteDisp.draw(args);
+            nvgRestore(vg);
+        }
+
+        // Scale name (bottom row)
+        {
+            LEDSegmentDisplay scaleNameDisp;
+            scaleNameDisp.text = scaleName;
+            scaleNameDisp.charWidth = scaleCharW;
+            scaleNameDisp.charHeight = scaleCharH;
+            scaleNameDisp.charSpacing = 1.f;
+            scaleNameDisp.box.size = Vec(box.size.x, rowHeight);
+            scaleNameDisp.box.pos = Vec(0, rowHeight);
+
+            nvgSave(vg);
+            nvgTranslate(vg, 0, rowHeight + 2);
+            scaleNameDisp.draw(args);
+            nvgRestore(vg);
+        }
+
+        OpaqueWidget::draw(args);
+    }
+};
 
 //-----------------------------------------------------------------------------
 // Scale Helper - Check if a semitone is in the current scale

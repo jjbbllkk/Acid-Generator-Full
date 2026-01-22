@@ -86,6 +86,7 @@ struct AcidSeq : Module {
     // Cached values for display access (updated each process cycle)
     int cachedPatternLength = 16;
     Scale cachedScale = Scale::MINOR;
+    int cachedRootNote = 0;
 
     AcidSeq() {
         config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -188,6 +189,7 @@ struct AcidSeq : Module {
         // Update cached values for display widget access
         cachedPatternLength = patternLength;
         cachedScale = scale;
+        cachedRootNote = rootNote;
 
         // Update display pattern (checks internally if params changed)
         updateDisplayPattern();
@@ -540,6 +542,22 @@ struct AcidSeqWidget : ModuleWidget {
         // === Generate Button with LED ===
         addParam(createParamCentered<VCVButton>(mm2px(Vec(18, 80)), module, AcidSeq::PARAM_GENERATE));
         addChild(createLightCentered<SmallLight<GreenLight>>(mm2px(Vec(18, 74)), module, AcidSeq::LIGHT_GENERATE));
+
+        // === Scale Display (LED style) ===
+        {
+            ScaleDisplay* scaleDisp = new ScaleDisplay();
+            // Center with piano roll (DISPLAY_X=42, DISPLAY_WIDTH=54)
+            float displayWidth = 50.f;
+            float displayX = 42.f + (54.f - displayWidth) / 2.f;  // Centered under piano roll
+            scaleDisp->box.pos = mm2px(Vec(displayX, 74));
+            scaleDisp->box.size = mm2px(Vec(displayWidth, 14));
+            scaleDisp->module = module;
+            if (module) {
+                scaleDisp->scalePtr = &module->cachedScale;
+                scaleDisp->rootNotePtr = &module->cachedRootNote;
+            }
+            addChild(scaleDisp);
+        }
 
         // === Piano Roll Display ===
         {
