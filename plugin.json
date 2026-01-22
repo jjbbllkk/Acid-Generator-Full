@@ -1,0 +1,26 @@
+{
+  "slug": "AcidSequencerClaude",
+  "name": "Acid Sequencer Claude",
+  "version": "2.0.0",
+  "license": "GPL-3.0-or-later",
+  "brand": "Acid Sequencer Claude",
+  "author": "FoxParty",
+  "authorEmail": "",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "AcidSeq",
+      "name": "Acid Sequencer",
+      "description": "Deterministic TB-303 style pattern sequencer with seeded random generation",
+      "tags": [
+        "Sequencer",
+        "Random"
+      ]
+    }
+  ]
+}
