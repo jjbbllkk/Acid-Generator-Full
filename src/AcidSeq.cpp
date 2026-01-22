@@ -560,6 +560,36 @@ struct AcidSeqWidget : ModuleWidget {
             addChild(pianoRoll);
         }
 
+        // === Page Navigation ===
+        {
+            // Left arrow button
+            PageButton* leftBtn = new PageButton();
+            leftBtn->direction = PageButton::LEFT;
+            leftBtn->box.pos = mm2px(Vec(DISPLAY_X - 5, 12 + 12));  // Centered vertically on piano roll
+            leftBtn->onClick = [this]() {
+                if (pianoRoll) pianoRoll->prevPage();
+            };
+            addChild(leftBtn);
+
+            // Right arrow button
+            PageButton* rightBtn = new PageButton();
+            rightBtn->direction = PageButton::RIGHT;
+            rightBtn->box.pos = mm2px(Vec(DISPLAY_X + DISPLAY_WIDTH + 1, 12 + 12));
+            rightBtn->onClick = [this]() {
+                if (pianoRoll) pianoRoll->nextPage();
+            };
+            addChild(rightBtn);
+
+            // Page indicator (1-4)
+            PageIndicator* pageInd = new PageIndicator();
+            pageInd->box.pos = mm2px(Vec(DISPLAY_X + (DISPLAY_WIDTH - 15) / 2, 12 + 36 + 1));
+            pageInd->pianoRoll = pianoRoll;
+            if (module) {
+                pageInd->patternLengthPtr = &module->cachedPatternLength;
+            }
+            addChild(pageInd);
+        }
+
         // === Indicator Rows (Octave, Slide, Accent) ===
         float indicatorY = 50.f;
         float indicatorHeight = 2.5f;

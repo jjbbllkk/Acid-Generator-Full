@@ -100,6 +100,10 @@ struct PianoRollDisplay : widget::OpaqueWidget {
     int viewOffset = 0;  // First visible step
     bool autoFollow = true;  // Auto-scroll to follow playhead
 
+    // Page navigation constants
+    static constexpr int PAGE_SIZE = 16;
+    static constexpr int NUM_PAGES = 4;  // 64 steps / 16 per page
+
     // Drag state
     bool isDragging = false;
     int dragStartCol = -1;
@@ -147,6 +151,31 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         int patternLength = patternLengthPtr ? *patternLengthPtr : 16;
         int maxOffset = std::max(0, patternLength - VISIBLE_STEPS);
         viewOffset = std::clamp(viewOffset, 0, maxOffset);
+    }
+
+    // Page navigation
+    int getCurrentPage() const {
+        return viewOffset / PAGE_SIZE;
+    }
+
+    void goToPage(int page) {
+        autoFollow = false;  // Disable auto-follow when manually navigating
+        viewOffset = page * PAGE_SIZE;
+        clampViewOffset();
+    }
+
+    void nextPage() {
+        int page = getCurrentPage();
+        if (page < NUM_PAGES - 1) {
+            goToPage(page + 1);
+        }
+    }
+
+    void prevPage() {
+        int page = getCurrentPage();
+        if (page > 0) {
+            goToPage(page - 1);
+        }
     }
 
     void drawLayer(const DrawArgs& args, int layer) override {
@@ -851,5 +880,139 @@ struct StepNumberDisplay : widget::OpaqueWidget {
         nvgFill(args.vg);
 
         OpaqueWidget::draw(args);
+    }
+};
+
+//-----------------------------------------------------------------------------
+// PageButton - Simple arrow button for page navigation
+//-----------------------------------------------------------------------------
+
+struct PageButton : widget::OpaqueWidget {
+    enum Direction { LEFT, RIGHT };
+    Direction direction = RIGHT;
+    std::function<void()> onClick;
+    bool pressed = false;
+
+    PageButton() {
+        box.size = Vec(12, 12);
+    }
+
+    void draw(const DrawArgs& args) override {
+        NVGcontext* vg = args.vg;
+
+        // Button background
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 2);
+        nvgFillColor(vg, pressed ? Colors::gray60() : Colors::gray80());
+        nvgFill(vg);
+        nvgStrokeColor(vg, Colors::gray60());
+        nvgStrokeWidth(vg, 1);
+        nvgStroke(vg);
+
+        // Arrow
+        float cx = box.size.x / 2;
+        float cy = box.size.y / 2;
+        float arrowSize = 3.f;
+
+        nvgBeginPath(vg);
+        if (direction == LEFT) {
+            nvgMoveTo(vg, cx + arrowSize, cy - arrowSize);
+            nvgLineTo(vg, cx - arrowSize, cy);
+            nvgLineTo(vg, cx + arrowSize, cy + arrowSize);
+        } else {
+            nvgMoveTo(vg, cx - arrowSize, cy - arrowSize);
+            nvgLineTo(vg, cx + arrowSize, cy);
+            nvgLineTo(vg, cx - arrowSize, cy + arrowSize);
+        }
+        nvgStrokeColor(vg, Colors::gray20());
+        nvgStrokeWidth(vg, 1.5f);
+        nvgStroke(vg);
+
+        OpaqueWidget::draw(args);
+    }
+
+    void onButton(const ButtonEvent& e) override {
+        if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+            if (e.action == GLFW_PRESS) {
+                pressed = true;
+                if (onClick) onClick();
+            } else if (e.action == GLFW_RELEASE) {
+                pressed = false;
+            }
+            e.consume(this);
+        }
+    }
+
+    void onLeave(const LeaveEvent& e) override {
+        pressed = false;
+        OpaqueWidget::onLeave(e);
+    }
+};
+
+//-----------------------------------------------------------------------------
+// PageIndicator - Shows current page (1-4) with clickable page numbers
+//-----------------------------------------------------------------------------
+
+struct PageIndicator : widget::OpaqueWidget {
+    PianoRollDisplay* pianoRoll = nullptr;
+    int* patternLengthPtr = nullptr;
+
+    PageIndicator() {
+        box.size = Vec(50, 12);
+    }
+
+    void draw(const DrawArgs& args) override {
+        NVGcontext* vg = args.vg;
+
+        int currentPage = pianoRoll ? pianoRoll->getCurrentPage() : 0;
+        int patternLength = patternLengthPtr ? *patternLengthPtr : 16;
+        int maxPage = (patternLength - 1) / 16;  // Which pages have content
+
+        float pageWidth = box.size.x / 4;
+
+        nvgFontSize(vg, 9);
+        nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+
+        for (int i = 0; i < 4; i++) {
+            float x = i * pageWidth + pageWidth / 2;
+            float y = box.size.y / 2;
+
+            // Background for current page
+            if (i == currentPage) {
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, i * pageWidth + 1, 1, pageWidth - 2, box.size.y - 2, 2);
+                nvgFillColor(vg, Colors::blue60());
+                nvgFill(vg);
+            }
+
+            // Page number
+            NVGcolor textColor;
+            if (i == currentPage) {
+                textColor = Colors::gray20();
+            } else if (i <= maxPage) {
+                textColor = Colors::gray30();
+            } else {
+                textColor = Colors::withAlpha(Colors::gray60(), 0.4f);
+            }
+
+            char num[2];
+            snprintf(num, sizeof(num), "%d", i + 1);
+            nvgFillColor(vg, textColor);
+            nvgText(vg, x, y, num, nullptr);
+        }
+
+        OpaqueWidget::draw(args);
+    }
+
+    void onButton(const ButtonEvent& e) override {
+        if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+            if (pianoRoll) {
+                float pageWidth = box.size.x / 4;
+                int clickedPage = static_cast<int>(e.pos.x / pageWidth);
+                clickedPage = std::clamp(clickedPage, 0, 3);
+                pianoRoll->goToPage(clickedPage);
+            }
+            e.consume(this);
+        }
     }
 };
