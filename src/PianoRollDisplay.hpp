@@ -89,7 +89,9 @@ struct PianoRollDisplay : widget::OpaqueWidget {
     static constexpr int MAX_PATTERN_STEPS = 64;
 
     // Cached pattern pointer (obtained from module)
-    Pattern* patternPtr = nullptr;
+    Pattern* patternPtr = nullptr;           // For display (read-only)
+    MasterPattern* masterPatternPtr = nullptr;  // For editing (write)
+    bool* forceDisplayRefreshPtr = nullptr;  // Set after edits to trigger refresh
     int* currentStepPtr = nullptr;
     int* patternLengthPtr = nullptr;
     Scale* scalePtr = nullptr;
@@ -122,6 +124,13 @@ struct PianoRollDisplay : widget::OpaqueWidget {
 
     PianoRollDisplay() {
         box.size = Vec(160, 60);
+    }
+
+    // Trigger display refresh after edits
+    void triggerDisplayRefresh() {
+        if (forceDisplayRefreshPtr) {
+            *forceDisplayRefreshPtr = true;
+        }
     }
 
     // Scroll to ensure a step is visible
@@ -405,7 +414,7 @@ struct PianoRollDisplay : widget::OpaqueWidget {
             return;
         }
 
-        if (!module || !patternPtr) {
+        if (!module || !patternPtr || !masterPatternPtr) {
             OpaqueWidget::onButton(e);
             return;
         }
@@ -431,38 +440,48 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         Scale scale = scalePtr ? *scalePtr : Scale::MINOR;
 
         if (e.action == GLFW_PRESS) {
-            SequenceStep& step = patternPtr->steps[col];
+            // Read from display pattern for current state
+            const SequenceStep& step = patternPtr->steps[col];
             int currentSemitone = step.isRest() ? -1 : getNoteInScale(step.note, scale, 0, 0);
             int currentDisplay = currentSemitone >= 0 ? ((currentSemitone % 12) + 12) % 12 : -1;
 
-            if (currentDisplay == row) {
+            // Write to master pattern
+            MasterStep& masterStep = masterPatternPtr->steps[col];
+
+            if (currentDisplay == row && !masterPatternPtr->muted[col]) {
                 // Clicking same note - modify or toggle
                 if (e.mods & GLFW_MOD_SHIFT) {
-                    step.accent = !step.accent;
+                    // Toggle accent: flip between always-on (0.0) and always-off (1.0)
+                    masterStep.accentProb = (masterStep.accentProb < 0.5f) ? 1.0f : 0.0f;
                 } else if (e.mods & GLFW_MOD_CONTROL) {
-                    step.slide = !step.slide;
+                    // Toggle slide: flip between always-on (0.0) and always-off (1.0)
+                    masterStep.slideProb = (masterStep.slideProb < 0.5f) ? 1.0f : 0.0f;
                 } else if (e.mods & GLFW_MOD_ALT) {
-                    step.octave = (step.octave + 2) % 3 - 1;
+                    // Cycle octave: 0 -> 1 -> -1 -> 0
+                    masterStep.octave = (masterStep.octave + 2) % 3 - 1;
                 } else {
-                    // Regular click - toggle to rest
-                    step.note = -1;
-                    step.accent = false;
-                    step.slide = false;
+                    // Regular click on existing note - mute it (create rest)
+                    masterPatternPtr->muted[col] = true;
                     dragNoteValue = -1;
                 }
             } else {
-                // Clicking different row - try to set new note
+                // Clicking different row or on a muted step - try to set new note
                 int newScaleDegree = semitoneToScaleDegree(row, scale);
 
                 if (newScaleDegree >= 0) {
-                    step.note = newScaleDegree;
-                    step.octave = 0;
-                    step.accent = false;
-                    step.slide = false;
+                    // Find the notePoolIndex for this scale degree
+                    int poolIndex = masterPatternPtr->findNotePoolIndex(newScaleDegree);
+                    masterStep.notePoolIndex = poolIndex;
+                    masterStep.octave = 0;
+                    // Reset accent/slide to neutral (will follow density knobs)
+                    masterStep.accentProb = 0.5f;
+                    masterStep.slideProb = 0.5f;
+                    // Unmute the step
+                    masterPatternPtr->muted[col] = false;
                     dragNoteValue = newScaleDegree;
                     dragOctave = 0;
                 } else {
-                    // Invalid note - flash feedback
+                    // Invalid note (not in scale) - flash feedback
                     invalidFlashTimer = 0.3f;
                     invalidFlashCol = col;
                     invalidFlashRow = row;
@@ -473,6 +492,9 @@ struct PianoRollDisplay : widget::OpaqueWidget {
             isDragging = true;
             dragStartCol = col;
             dragStartRow = row;
+
+            // Trigger display refresh to show the edit
+            triggerDisplayRefresh();
 
             e.consume(this);
         } else if (e.action == GLFW_RELEASE) {
@@ -487,7 +509,7 @@ struct PianoRollDisplay : widget::OpaqueWidget {
     }
 
     void onDragHover(const DragHoverEvent& e) override {
-        if (!isDragging || !module || !patternPtr) {
+        if (!isDragging || !module || !patternPtr || !masterPatternPtr) {
             OpaqueWidget::onDragHover(e);
             return;
         }
@@ -510,23 +532,26 @@ struct PianoRollDisplay : widget::OpaqueWidget {
             return;
         }
 
-        SequenceStep& step = patternPtr->steps[col];
+        MasterStep& masterStep = masterPatternPtr->steps[col];
 
         // Paint the same note value as drag start
         if (dragNoteValue < 0) {
-            // Painting rests
-            step.note = -1;
-            step.accent = false;
-            step.slide = false;
+            // Painting rests (mute the step)
+            masterPatternPtr->muted[col] = true;
         } else {
             // Painting notes
-            step.note = dragNoteValue;
-            step.octave = dragOctave;
-            step.accent = false;
-            step.slide = false;
+            int poolIndex = masterPatternPtr->findNotePoolIndex(dragNoteValue);
+            masterStep.notePoolIndex = poolIndex;
+            masterStep.octave = dragOctave;
+            masterStep.accentProb = 0.5f;  // Neutral - follows density
+            masterStep.slideProb = 0.5f;   // Neutral - follows density
+            masterPatternPtr->muted[col] = false;
         }
 
         dragStartCol = col;  // Update to prevent re-painting same cell
+
+        // Trigger display refresh to show the edit
+        triggerDisplayRefresh();
 
         e.consume(this);
     }
@@ -556,7 +581,9 @@ struct PianoRollDisplay : widget::OpaqueWidget {
 
 struct StepIndicatorDisplay : widget::OpaqueWidget {
     Module* module = nullptr;
-    Pattern* patternPtr = nullptr;
+    Pattern* patternPtr = nullptr;              // For display (read-only)
+    MasterPattern* masterPatternPtr = nullptr;  // For editing (write)
+    bool* forceDisplayRefreshPtr = nullptr;     // Set after edits to trigger refresh
     int* currentStepPtr = nullptr;
     int* patternLengthPtr = nullptr;
     int* viewOffsetPtr = nullptr;  // Shared with piano roll for synchronized scrolling
@@ -573,6 +600,12 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
 
     int getViewOffset() const {
         return viewOffsetPtr ? *viewOffsetPtr : 0;
+    }
+
+    void triggerDisplayRefresh() {
+        if (forceDisplayRefreshPtr) {
+            *forceDisplayRefreshPtr = true;
+        }
     }
 
     const char* getLabel() const {
@@ -690,7 +723,7 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
             return;
         }
 
-        if (!module || !patternPtr) {
+        if (!module || !patternPtr || !masterPatternPtr) {
             OpaqueWidget::onButton(e);
             return;
         }
@@ -719,28 +752,35 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
             return;
         }
 
-        SequenceStep& step = patternPtr->steps[col];
-
-        // Don't modify rests
-        if (step.isRest()) {
+        // Check if step is muted or a rest
+        const SequenceStep& step = patternPtr->steps[col];
+        if (step.isRest() || masterPatternPtr->muted[col]) {
             e.consume(this);
             return;
         }
 
+        // Write to master pattern
+        MasterStep& masterStep = masterPatternPtr->steps[col];
+
         switch (rowType) {
             case RowType::ACCENT:
-                step.accent = !step.accent;
+                // Toggle between always-on (0.0) and always-off (1.0)
+                masterStep.accentProb = (masterStep.accentProb < 0.5f) ? 1.0f : 0.0f;
                 break;
             case RowType::SLIDE:
-                step.slide = !step.slide;
+                // Toggle between always-on (0.0) and always-off (1.0)
+                masterStep.slideProb = (masterStep.slideProb < 0.5f) ? 1.0f : 0.0f;
                 break;
             case RowType::OCTAVE:
                 // Cycle: 0 -> 1 -> -1 -> 0
-                if (step.octave == 0) step.octave = 1;
-                else if (step.octave == 1) step.octave = -1;
-                else step.octave = 0;
+                if (masterStep.octave == 0) masterStep.octave = 1;
+                else if (masterStep.octave == 1) masterStep.octave = -1;
+                else masterStep.octave = 0;
                 break;
         }
+
+        // Trigger display refresh to show the edit
+        triggerDisplayRefresh();
 
         e.consume(this);
     }

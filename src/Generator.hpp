@@ -280,6 +280,10 @@ struct MasterPattern {
     // Step data for all 64 steps
     MasterStep steps[MAX_STEPS];
 
+    // Per-step mute mask (for user-created rests)
+    // When true, step is forced to rest regardless of density
+    bool muted[MAX_STEPS];
+
     MasterPattern() {
         for (int i = 0; i < BAR_LEN; i++) {
             barActivationOrder[i] = i;
@@ -289,6 +293,7 @@ struct MasterPattern {
         }
         for (int i = 0; i < MAX_STEPS; i++) {
             steps[i] = {0, 0, 0.5f, 0.5f};
+            muted[i] = false;
         }
     }
 
@@ -324,10 +329,34 @@ struct MasterPattern {
         }
     }
 
+    // Find the notePoolIndex for a given scale degree
+    // Returns the index into scalePriorityOrder that contains the given degree
+    // Returns 0 (root) if not found
+    int findNotePoolIndex(int scaleDegree) const {
+        for (int i = 0; i < SCALE_SIZE; i++) {
+            if (scalePriorityOrder[i] == scaleDegree) {
+                return i;
+            }
+        }
+        return 0;  // Default to root if not found
+    }
+
+    // Clear all mutes (called when generating new pattern)
+    void clearMutes() {
+        for (int i = 0; i < MAX_STEPS; i++) {
+            muted[i] = false;
+        }
+    }
+
     // Get full step data with density/spread/accent/slide applied
     SequenceStep getStep(int step, float density, float spread,
                          float accentsDensity, float slidesDensity,
                          bool quantizeToPool = true) const {
+        // Check user mute first (takes priority over density)
+        if (muted[step]) {
+            return {-1, 0, false, false};  // Rest due to user mute
+        }
+
         if (!isStepActive(step, density)) {
             return {-1, 0, false, false};  // Rest due to density
         }

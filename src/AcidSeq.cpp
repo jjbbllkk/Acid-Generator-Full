@@ -53,12 +53,13 @@ struct AcidSeq : Module {
     // Master pattern data (density/spread applied in real-time)
     MasterPattern masterPattern;
 
-    // Cached pattern for display (recomputed when params change)
+    // Cached pattern for display (recomputed when params change or edits occur)
     Pattern displayPattern;
     float cachedDensity = -1.f;
     float cachedSpread = -1.f;
     float cachedAccentDensity = -1.f;
     float cachedSlideDensity = -1.f;
+    bool forceDisplayRefresh = false;  // Set by UI edits to trigger refresh
 
     int currentStep = -1;  // -1 means not started yet
 
@@ -136,6 +137,9 @@ struct AcidSeq : Module {
         // Generate master pattern (density/spread will be applied in real-time)
         generateMaster(currentSeed, masterPattern);
 
+        // Clear any user mutes from previous pattern
+        masterPattern.clearMutes();
+
         // Force display pattern update
         cachedDensity = -1.f;
 
@@ -150,12 +154,14 @@ struct AcidSeq : Module {
         float accentDensity = params[PARAM_ACCENT_DENSITY].getValue();
         float slideDensity = params[PARAM_SLIDE_DENSITY].getValue();
 
-        // Only update if params changed
-        if (density == cachedDensity && spread == cachedSpread &&
+        // Only update if params changed or UI edit forced refresh
+        if (!forceDisplayRefresh &&
+            density == cachedDensity && spread == cachedSpread &&
             accentDensity == cachedAccentDensity && slideDensity == cachedSlideDensity) {
             return;
         }
 
+        forceDisplayRefresh = false;
         cachedDensity = density;
         cachedSpread = spread;
         cachedAccentDensity = accentDensity;
@@ -347,7 +353,7 @@ struct AcidSeq : Module {
     //   - masterPattern: Full master pattern backup (barActivationOrder, scalePriorityOrder, steps)
     //-------------------------------------------------------------------------
 
-    static constexpr int JSON_VERSION = 2;
+    static constexpr int JSON_VERSION = 3;
 
     json_t* dataToJson() override {
         json_t* rootJ = json_object();
@@ -384,6 +390,7 @@ struct AcidSeq : Module {
             json_object_set_new(stepJ, "o", json_integer(masterPattern.steps[i].octave));
             json_object_set_new(stepJ, "a", json_real(masterPattern.steps[i].accentProb));
             json_object_set_new(stepJ, "s", json_real(masterPattern.steps[i].slideProb));
+            json_object_set_new(stepJ, "m", json_boolean(masterPattern.muted[i]));
             json_array_append_new(stepsJ, stepJ);
         }
         json_object_set_new(masterJ, "steps", stepsJ);
@@ -446,11 +453,13 @@ struct AcidSeq : Module {
                         json_t* oJ = json_object_get(stepDataJ, "o");
                         json_t* aJ = json_object_get(stepDataJ, "a");
                         json_t* sJ = json_object_get(stepDataJ, "s");
+                        json_t* mJ = json_object_get(stepDataJ, "m");
 
                         if (pJ) masterPattern.steps[i].notePoolIndex = json_integer_value(pJ);
                         if (oJ) masterPattern.steps[i].octave = json_integer_value(oJ);
                         if (aJ) masterPattern.steps[i].accentProb = json_real_value(aJ);
                         if (sJ) masterPattern.steps[i].slideProb = json_real_value(sJ);
+                        if (mJ) masterPattern.muted[i] = json_boolean_value(mJ);
                     }
                 }
             }
@@ -541,6 +550,8 @@ struct AcidSeqWidget : ModuleWidget {
 
             if (module) {
                 pianoRoll->patternPtr = &module->displayPattern;
+                pianoRoll->masterPatternPtr = &module->masterPattern;
+                pianoRoll->forceDisplayRefreshPtr = &module->forceDisplayRefresh;
                 pianoRoll->currentStepPtr = &module->currentStep;
                 pianoRoll->patternLengthPtr = &module->cachedPatternLength;
                 pianoRoll->scalePtr = &module->cachedScale;
@@ -564,6 +575,8 @@ struct AcidSeqWidget : ModuleWidget {
             octaveRow->viewOffsetPtr = &pianoRoll->viewOffset;  // Sync scrolling
             if (module) {
                 octaveRow->patternPtr = &module->displayPattern;
+                octaveRow->masterPatternPtr = &module->masterPattern;
+                octaveRow->forceDisplayRefreshPtr = &module->forceDisplayRefresh;
                 octaveRow->currentStepPtr = &module->currentStep;
                 octaveRow->patternLengthPtr = &module->cachedPatternLength;
             }
@@ -580,6 +593,8 @@ struct AcidSeqWidget : ModuleWidget {
             slideRow->viewOffsetPtr = &pianoRoll->viewOffset;  // Sync scrolling
             if (module) {
                 slideRow->patternPtr = &module->displayPattern;
+                slideRow->masterPatternPtr = &module->masterPattern;
+                slideRow->forceDisplayRefreshPtr = &module->forceDisplayRefresh;
                 slideRow->currentStepPtr = &module->currentStep;
                 slideRow->patternLengthPtr = &module->cachedPatternLength;
             }
@@ -596,6 +611,8 @@ struct AcidSeqWidget : ModuleWidget {
             accentRow->viewOffsetPtr = &pianoRoll->viewOffset;  // Sync scrolling
             if (module) {
                 accentRow->patternPtr = &module->displayPattern;
+                accentRow->masterPatternPtr = &module->masterPattern;
+                accentRow->forceDisplayRefreshPtr = &module->forceDisplayRefresh;
                 accentRow->currentStepPtr = &module->currentStep;
                 accentRow->patternLengthPtr = &module->cachedPatternLength;
             }
