@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.dylib
+*.so
+*.dll
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
