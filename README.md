@@ -27,6 +27,30 @@ Unlike standard random generators, this version focuses on **musical stability a
 * **Visual Feedback:** The piano roll now visually dims steps that are outside the active loop length.
 * **Expanded Scales:** Added Pentatonic Minor/Major, Blues Minor, Whole Tone, Chromatic, and Japanese In Sen scales.
 
+## Installation (VCV Rack)
+
+### Pre-built (Recommended)
+1. Download the latest release for your platform from the [Releases](https://github.com/jjbbllkk/Acid-Generator-VCV-Port-Piano-Roll/releases) page
+2. Extract the `AcidGenerator` folder to your VCV Rack plugins directory:
+   - **macOS:** `~/Documents/Rack2/plugins/`
+   - **Windows:** `My Documents/Rack2/plugins/`
+   - **Linux:** `~/.Rack2/plugins/`
+3. Restart VCV Rack
+4. Find "Acid Generator" in the module browser under the "Vulpes79" brand
+
+### Build from Source
+1. Clone this repository into your Rack SDK plugins folder:
+   ```
+   cd /path/to/Rack-SDK/plugins
+   git clone https://github.com/jjbbllkk/Acid-Generator-VCV-Port-Piano-Roll.git AcidGenerator
+   ```
+2. Build the plugin:
+   ```
+   cd AcidGenerator
+   make
+   ```
+3. The built plugin will be in the `dist/` folder. Copy it to your plugins directory (see paths above).
+
 ## USAGE
 
 * **Space:** Start/Stop playback.
