@@ -32,7 +32,7 @@ Unlike standard random generators, this version focuses on **musical stability a
 ### Pre-built (Recommended)
 1. Download the latest release for your platform from the [Releases](https://github.com/jjbbllkk/Acid-Generator-VCV-Port-Piano-Roll/releases) page
 2. Extract the `AcidGenerator` folder to your VCV Rack plugins directory:
-   - **macOS:** `~/Documents/Rack2/plugins/`
+   - **macOS:** `~/Documents/Rack2/plugins/` or `~/Library/Application Support/Rack2/plugins-mac-arm64/` (Apple Silicon)
    - **Windows:** `My Documents/Rack2/plugins/`
    - **Linux:** `~/.Rack2/plugins/`
 3. Restart VCV Rack
