@@ -5,7 +5,7 @@
 
 using namespace AcidGenerator;
 
-struct AcidSeq : Module {
+struct AcidGen : Module {
     enum ParamIds {
         PARAM_PATTERN_LENGTH,
         PARAM_DENSITY,
@@ -88,7 +88,7 @@ struct AcidSeq : Module {
     Scale cachedScale = Scale::MINOR;
     int cachedRootNote = 0;
 
-    AcidSeq() {
+    AcidGen() {
         config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
         // Pattern generation parameters
@@ -504,16 +504,16 @@ struct AcidSeq : Module {
 // Module Widget (Panel UI) - 20HP width to accommodate piano roll display
 //-----------------------------------------------------------------------------
 
-struct AcidSeqWidget : ModuleWidget {
+struct AcidGenWidget : ModuleWidget {
     PianoRollDisplay* pianoRoll = nullptr;
     StepIndicatorDisplay* accentRow = nullptr;
     StepIndicatorDisplay* slideRow = nullptr;
     StepIndicatorDisplay* octaveRow = nullptr;
     StepNumberDisplay* stepNumbers = nullptr;
 
-    AcidSeqWidget(AcidSeq* module) {
+    AcidGenWidget(AcidGen* module) {
         setModule(module);
-        setPanel(createPanel(asset::plugin(pluginInstance, "res/AcidSeq.svg")));
+        setPanel(createPanel(asset::plugin(pluginInstance, "res/AcidGen.svg")));
 
         // Screws
         addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
@@ -527,30 +527,34 @@ struct AcidSeqWidget : ModuleWidget {
         const float DISPLAY_X = 42.f;      // Start of display area
         const float DISPLAY_WIDTH = 54.f;  // Width of displays in mm
 
+        // === Knob row Y positions (equidistant, with label margin top/bottom) ===
+        const float KNOB_Y1 = 23.f;
+        const float KNOB_Y2 = 41.5f;
+        const float KNOB_Y3 = 60.f;
+        const float KNOB_Y4 = 78.5f;
+
         // === Left Column: Generation Parameters ===
-        addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(LEFT_SECTION, 18)), module, AcidSeq::PARAM_DENSITY));
-        addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(LEFT_SECTION, 36)), module, AcidSeq::PARAM_SPREAD));
-        addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(LEFT_SECTION, 52)), module, AcidSeq::PARAM_ACCENT_DENSITY));
-        addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(LEFT_SECTION, 66)), module, AcidSeq::PARAM_SLIDE_DENSITY));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(LEFT_SECTION, KNOB_Y1)), module, AcidGen::PARAM_DENSITY));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(LEFT_SECTION, KNOB_Y2)), module, AcidGen::PARAM_SPREAD));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(LEFT_SECTION, KNOB_Y3)), module, AcidGen::PARAM_ACCENT_DENSITY));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(LEFT_SECTION, KNOB_Y4)), module, AcidGen::PARAM_SLIDE_DENSITY));
 
         // === Right Column: Scale/Length Parameters ===
-        addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(RIGHT_SECTION, 18)), module, AcidSeq::PARAM_PATTERN_LENGTH));
-        addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(RIGHT_SECTION, 36)), module, AcidSeq::PARAM_SCALE));
-        addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(RIGHT_SECTION, 52)), module, AcidSeq::PARAM_ROOT_NOTE));
-        addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(RIGHT_SECTION, 66)), module, AcidSeq::PARAM_OCTAVE));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(RIGHT_SECTION, KNOB_Y1)), module, AcidGen::PARAM_PATTERN_LENGTH));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(RIGHT_SECTION, KNOB_Y2)), module, AcidGen::PARAM_SCALE));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(RIGHT_SECTION, KNOB_Y3)), module, AcidGen::PARAM_ROOT_NOTE));
+        addParam(createParamCentered<Rogan1PWhite>(mm2px(Vec(RIGHT_SECTION, KNOB_Y4)), module, AcidGen::PARAM_OCTAVE));
 
-        // === Generate Button with LED ===
-        addParam(createParamCentered<VCVButton>(mm2px(Vec(18, 80)), module, AcidSeq::PARAM_GENERATE));
-        addChild(createLightCentered<SmallLight<GreenLight>>(mm2px(Vec(18, 74)), module, AcidSeq::LIGHT_GENERATE));
+        // === Generate Button with LED (centered between display section and yellow stripe) ===
+        float displayCenter = DISPLAY_X + DISPLAY_WIDTH / 2.f;  // 69mm
+        addParam(createParamCentered<VCVButton>(mm2px(Vec(displayCenter, 69)), module, AcidGen::PARAM_GENERATE));
+        addChild(createLightCentered<SmallLight<YellowLight>>(mm2px(Vec(displayCenter + 6, 69)), module, AcidGen::LIGHT_GENERATE));
 
-        // === Scale Display (LED style) ===
+        // === Scale Display (centered between generate button and yellow stripe) ===
         {
             ScaleDisplay* scaleDisp = new ScaleDisplay();
-            // Center with piano roll (DISPLAY_X=42, DISPLAY_WIDTH=54)
-            float displayWidth = 50.f;
-            float displayX = 42.f + (54.f - displayWidth) / 2.f;  // Centered under piano roll
-            scaleDisp->box.pos = mm2px(Vec(displayX, 74));
-            scaleDisp->box.size = mm2px(Vec(displayWidth, 14));
+            scaleDisp->box.pos = mm2px(Vec(DISPLAY_X, 76));
+            scaleDisp->box.size = mm2px(Vec(DISPLAY_WIDTH, 8));
             scaleDisp->module = module;
             if (module) {
                 scaleDisp->scalePtr = &module->cachedScale;
@@ -682,41 +686,69 @@ struct AcidSeqWidget : ModuleWidget {
         }
 
         // === Inputs Row ===
-        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10, 100)), module, AcidSeq::INPUT_CLOCK));
-        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(22, 100)), module, AcidSeq::INPUT_RESET));
-        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 100)), module, AcidSeq::INPUT_GENERATE));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10, 100)), module, AcidGen::INPUT_CLOCK));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(22, 100)), module, AcidGen::INPUT_RESET));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 100)), module, AcidGen::INPUT_GENERATE));
 
         // === Outputs Row ===
-        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(52, 100)), module, AcidSeq::OUTPUT_PITCH));
-        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(64, 100)), module, AcidSeq::OUTPUT_GATE));
-        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(76, 100)), module, AcidSeq::OUTPUT_ACCENT));
-        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(88, 100)), module, AcidSeq::OUTPUT_SLIDE));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(52, 100)), module, AcidGen::OUTPUT_PITCH));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(64, 100)), module, AcidGen::OUTPUT_GATE));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(76, 100)), module, AcidGen::OUTPUT_ACCENT));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(88, 100)), module, AcidGen::OUTPUT_SLIDE));
 
-        // === Step Indicator LEDs (below outputs, optional visual feedback) ===
+        // === Step Indicator LEDs (below outputs, yellow per design language) ===
         for (int i = 0; i < 8; i++) {
-            addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 112)), module, AcidSeq::LIGHT_STEP + i));
-            addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 116)), module, AcidSeq::LIGHT_STEP + 8 + i));
+            addChild(createLightCentered<TinyLight<YellowLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 112)), module, AcidGen::LIGHT_STEP + i));
+            addChild(createLightCentered<TinyLight<YellowLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 116)), module, AcidGen::LIGHT_STEP + 8 + i));
         }
     }
 
-    // Context menu for scale selection
     void appendContextMenu(Menu* menu) override {
-        AcidSeq* module = dynamic_cast<AcidSeq*>(this->module);
+        AcidGen* module = dynamic_cast<AcidGen*>(this->module);
         if (!module) return;
 
+        // --- Scale & Root Note submenus ---
         menu->addChild(new MenuSeparator());
-        menu->addChild(createMenuLabel("Scale"));
 
+        // Scale submenu
+        std::vector<std::string> scaleLabels;
         for (int i = 0; i < static_cast<int>(Scale::NUM_SCALES); i++) {
-            Scale s = static_cast<Scale>(i);
-            menu->addChild(createCheckMenuItem(
-                getScaleName(s),
-                "",
-                [=]() { return static_cast<int>(module->params[AcidSeq::PARAM_SCALE].getValue()) == i; },
-                [=]() { module->params[AcidSeq::PARAM_SCALE].setValue(static_cast<float>(i)); }
-            ));
+            scaleLabels.push_back(getScaleName(static_cast<Scale>(i)));
         }
+        menu->addChild(createIndexSubmenuItem("Scale", scaleLabels,
+            [=]() { return static_cast<int>(module->params[AcidGen::PARAM_SCALE].getValue()); },
+            [=](int i) { module->params[AcidGen::PARAM_SCALE].setValue(static_cast<float>(i)); }
+        ));
+
+        // Root Note submenu
+        std::vector<std::string> noteLabels = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+        menu->addChild(createIndexSubmenuItem("Root Note", noteLabels,
+            [=]() { return static_cast<int>(module->params[AcidGen::PARAM_ROOT_NOTE].getValue()); },
+            [=](int i) { module->params[AcidGen::PARAM_ROOT_NOTE].setValue(static_cast<float>(i)); }
+        ));
+
+        // --- Pattern actions ---
+        menu->addChild(new MenuSeparator());
+
+        menu->addChild(createMenuItem("Clear Pattern", "", [=]() {
+            for (int i = 0; i < MAX_STEPS; i++) {
+                module->masterPattern.muted[i] = true;
+            }
+            module->forceDisplayRefresh = true;
+        }));
+
+        menu->addChild(createMenuItem("Randomize", "", [=]() {
+            module->generateNewPattern();
+        }));
+
+        // --- Auto-follow toggle ---
+        menu->addChild(new MenuSeparator());
+
+        menu->addChild(createBoolMenuItem("Auto-follow Playhead", "",
+            [=]() { return pianoRoll->autoFollow; },
+            [=](bool val) { pianoRoll->autoFollow = val; }
+        ));
     }
 };
 
-Model* modelAcidSeq = createModel<AcidSeq, AcidSeqWidget>("AcidSeq");
+Model* modelAcidGen = createModel<AcidGen, AcidGenWidget>("AcidGen");

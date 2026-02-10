@@ -6,5 +6,5 @@ void init(Plugin* p) {
     pluginInstance = p;
 
     // Register all modules
-    p->addModel(modelAcidSeq);
+    p->addModel(modelAcidGen);
 }

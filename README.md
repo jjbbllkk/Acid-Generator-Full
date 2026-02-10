@@ -1,4 +1,4 @@
-# ACID PATTERN GENERATOR
+# ACID GENERATOR
 
 **A deterministic, musically-aware acid bassline generator.**
 

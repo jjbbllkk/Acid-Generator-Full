@@ -6,7 +6,7 @@ FLAGS += -std=c++17
 
 # Source files to compile
 SOURCES += src/plugin.cpp
-SOURCES += src/AcidSeq.cpp
+SOURCES += src/AcidGen.cpp
 
 # Add res directory to distributables
 DISTRIBUTABLES += res

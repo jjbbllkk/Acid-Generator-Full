@@ -6,37 +6,57 @@
 using namespace AcidGenerator;
 
 //-----------------------------------------------------------------------------
-// Color Palette (ported from colors.less)
+// Color Palette - vulpes79 Design Language
+// Monochrome grayscale base with yellow (#ffff00) accents
 //-----------------------------------------------------------------------------
 namespace Colors {
-    // Grays
-    inline NVGcolor gray100() { return nvgRGB(0x16, 0x16, 0x16); }
-    inline NVGcolor gray90()  { return nvgRGB(0x26, 0x26, 0x26); }
-    inline NVGcolor gray80()  { return nvgRGB(0x39, 0x39, 0x39); }
-    inline NVGcolor gray70()  { return nvgRGB(0x52, 0x52, 0x52); }
+    // Panel backgrounds (light theme)
+    inline NVGcolor panelBg()    { return nvgRGB(0xe6, 0xe6, 0xe6); }  // Main panel
+    inline NVGcolor sectionBg()  { return nvgRGB(0xdc, 0xdc, 0xdc); }  // Section grouping
+    inline NVGcolor cvBg()       { return nvgRGB(0x22, 0x22, 0x22); }  // CV input area
+    inline NVGcolor outputBg()   { return nvgRGB(0x1a, 0x1a, 0x1a); }  // Output area (darkest)
+
+    // Grays (rebalanced for light panel)
+    inline NVGcolor gray100() { return nvgRGB(0x1a, 0x1a, 0x1a); }  // Darkest text
+    inline NVGcolor gray90()  { return nvgRGB(0x2a, 0x2a, 0x2a); }
+    inline NVGcolor gray80()  { return nvgRGB(0x44, 0x44, 0x44); }
+    inline NVGcolor gray70()  { return nvgRGB(0x55, 0x55, 0x55); }
     inline NVGcolor gray60()  { return nvgRGB(0x6f, 0x6f, 0x6f); }
-    inline NVGcolor gray30()  { return nvgRGB(0xc6, 0xc6, 0xc6); }
-    inline NVGcolor gray20()  { return nvgRGB(0xe0, 0xe0, 0xe0); }
+    inline NVGcolor gray50()  { return nvgRGB(0x99, 0x99, 0x99); }  // Icon strokes
+    inline NVGcolor gray30()  { return nvgRGB(0xb3, 0xb3, 0xb3); }  // Light labels
+    inline NVGcolor gray20()  { return nvgRGB(0xdc, 0xdc, 0xdc); }
+    inline NVGcolor gray10()  { return nvgRGB(0xe6, 0xe6, 0xe6); }
 
-    // Emerald (active notes)
-    inline NVGcolor emerald30() { return nvgRGB(0x79, 0xd8, 0xb9); }
-    inline NVGcolor emerald50() { return nvgRGB(0x1e, 0x9f, 0x7e); }
-    inline NVGcolor emerald80() { return nvgRGB(0x1c, 0x3f, 0x34); }
+    // Yellow accent (used sparingly - divider lines, panel elements only)
+    inline NVGcolor accent()     { return nvgRGB(0xff, 0xff, 0x00); }  // #ffff00
 
-    // Red (accents)
-    inline NVGcolor red60()  { return nvgRGB(0xd0, 0x30, 0x3d); }
-    inline NVGcolor red80()  { return nvgRGB(0x6c, 0x1c, 0x21); }
+    // Display accent - signature cyan/teal per DESIGN.md
+    inline NVGcolor displayAccent()    { return nvgRGB(0x79, 0xd8, 0xb9); }  // #79d8b9
+    inline NVGcolor displayAccentDim() { return nvgRGB(0x50, 0x90, 0x80); }  // #509080
 
-    // Yellow (slides)
-    inline NVGcolor yellow60() { return nvgRGB(0x8c, 0x6a, 0x14); }
-    inline NVGcolor yellow40() { return nvgRGB(0xd0, 0xa1, 0x23); }
+    // Note colors (uses display accent)
+    inline NVGcolor noteActive()   { return displayAccent(); }     // Active notes - cyan/teal
+    inline NVGcolor noteNormal()   { return displayAccentDim(); }  // Normal notes - dim teal
+    inline NVGcolor noteBg()       { return nvgRGB(0x1a, 0x2a, 0x25); }  // Dark teal tint
 
-    // Blue (playhead, octave up)
+    // Accent markers (orange per DESIGN.md)
+    inline NVGcolor accentOn()  { return nvgRGB(0xff, 0x80, 0x40); }  // #ff8040
+    inline NVGcolor accentOff() { return nvgRGB(0xaa, 0x55, 0x22); }  // #aa5522
+
+    // Slide markers (blue per DESIGN.md)
+    inline NVGcolor slideOn()  { return nvgRGB(0x40, 0x80, 0xff); }  // #4080ff
+    inline NVGcolor slideOff() { return nvgRGB(0x22, 0x55, 0xaa); }  // #2255aa
+
+    // Display backgrounds
+    inline NVGcolor displayBg()     { return nvgRGB(0x0a, 0x0a, 0x0a); }  // Near-black
+    inline NVGcolor displayBorder() { return nvgRGB(0x33, 0x33, 0x33); }  // Dark gray border
+
+    // Blue (octave up indicator)
     inline NVGcolor blue60()  { return nvgRGB(0x1a, 0x71, 0xbf); }
     inline NVGcolor blue40()  { return nvgRGB(0x66, 0xac, 0xfb); }
     inline NVGcolor blue10()  { return nvgRGB(0xeb, 0xf5, 0xfe); }
 
-    // Green (octave down)
+    // Green (octave down indicator)
     inline NVGcolor green60() { return nvgRGB(0x14, 0x81, 0x26); }
     inline NVGcolor green40() { return nvgRGB(0x40, 0xc0, 0x50); }
 
@@ -45,10 +65,10 @@ namespace Colors {
         return nvgRGBAf(c.r, c.g, c.b, a);
     }
 
-    // LED display colors
-    inline NVGcolor ledOn()  { return nvgRGB(0xff, 0x44, 0x00); }  // Bright amber/orange
-    inline NVGcolor ledOff() { return nvgRGB(0x30, 0x18, 0x08); }  // Dim amber (off segments)
-    inline NVGcolor ledGlow() { return nvgRGBA(0xff, 0x66, 0x00, 0x40); }  // Glow effect
+    // LED display colors (cyan/teal to match display accent)
+    inline NVGcolor ledOn()  { return nvgRGB(0x79, 0xd8, 0xb9); }  // #79d8b9
+    inline NVGcolor ledOff() { return nvgRGB(0x15, 0x2a, 0x22); }  // Dark teal
+    inline NVGcolor ledGlow() { return nvgRGBA(0x79, 0xd8, 0xb9, 0x40); }  // Teal glow
 }
 
 //-----------------------------------------------------------------------------
@@ -211,12 +231,12 @@ struct LEDSegmentDisplay : widget::OpaqueWidget {
     void draw(const DrawArgs& args) override {
         NVGcontext* vg = args.vg;
 
-        // Background
+        // Background (dark display inset into light panel)
         nvgBeginPath(vg);
         nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 3);
         nvgFillColor(vg, nvgRGB(0x0a, 0x0a, 0x0a));
         nvgFill(vg);
-        nvgStrokeColor(vg, Colors::gray80());
+        nvgStrokeColor(vg, Colors::displayBorder());
         nvgStrokeWidth(vg, 1);
         nvgStroke(vg);
 
@@ -246,33 +266,32 @@ struct ScaleDisplay : widget::OpaqueWidget {
 
     static constexpr const char* NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
-    // Abbreviated scale names to fit display
     static const char* getScaleAbbrev(Scale scale) {
         switch (scale) {
-            case Scale::MAJOR: return "MAJOR";
-            case Scale::MINOR: return "MINOR";
-            case Scale::DORIAN: return "DORIAN";
-            case Scale::MIXOLYDIAN: return "MIXO";
-            case Scale::LYDIAN: return "LYDIAN";
-            case Scale::PHRYGIAN: return "PHRYG";
-            case Scale::LOCRIAN: return "LOCRIAN";
-            case Scale::HARMONIC_MINOR: return "H-MIN";
-            case Scale::HARMONIC_MAJOR: return "H-MAJ";
-            case Scale::DORIAN_NR_4: return "DOR-4";
-            case Scale::PHRYGIAN_DOMINANT: return "PH-DOM";
-            case Scale::MELODIC_MINOR: return "M-MIN";
-            case Scale::LYDIAN_AUGMENTED: return "LYD-A";
-            case Scale::LYDIAN_DOMINANT: return "LYD-D";
-            case Scale::HUNGARIAN_MINOR: return "HUNG";
-            case Scale::SUPER_LOCRIAN: return "S-LOC";
-            case Scale::SPANISH: return "SPAIN";
-            case Scale::BHAIRAV: return "BHAIRV";
-            case Scale::PENTATONIC_MINOR: return "PENTA";
-            case Scale::PENTATONIC_MAJOR: return "PEN-M";
-            case Scale::BLUES_MINOR: return "BLUES";
-            case Scale::WHOLE_TONE: return "WHOLE";
-            case Scale::CHROMATIC: return "CHROM";
-            case Scale::JAPANESE_IN_SEN: return "INSEN";
+            case Scale::MAJOR: return "MAJ";
+            case Scale::MINOR: return "MIN";
+            case Scale::DORIAN: return "DOR";
+            case Scale::MIXOLYDIAN: return "MIX";
+            case Scale::LYDIAN: return "LYD";
+            case Scale::PHRYGIAN: return "PHR";
+            case Scale::LOCRIAN: return "LOC";
+            case Scale::HARMONIC_MINOR: return "H-m";
+            case Scale::HARMONIC_MAJOR: return "H-M";
+            case Scale::DORIAN_NR_4: return "D#4";
+            case Scale::PHRYGIAN_DOMINANT: return "PhD";
+            case Scale::MELODIC_MINOR: return "Mm";
+            case Scale::LYDIAN_AUGMENTED: return "L+";
+            case Scale::LYDIAN_DOMINANT: return "LD";
+            case Scale::HUNGARIAN_MINOR: return "HUN";
+            case Scale::SUPER_LOCRIAN: return "SuL";
+            case Scale::SPANISH: return "SPA";
+            case Scale::BHAIRAV: return "BHV";
+            case Scale::PENTATONIC_MINOR: return "Pm";
+            case Scale::PENTATONIC_MAJOR: return "PM";
+            case Scale::BLUES_MINOR: return "BLU";
+            case Scale::WHOLE_TONE: return "WHL";
+            case Scale::CHROMATIC: return "CHR";
+            case Scale::JAPANESE_IN_SEN: return "INS";
             default: return "---";
         }
     }
@@ -283,48 +302,30 @@ struct ScaleDisplay : widget::OpaqueWidget {
         Scale scale = scalePtr ? *scalePtr : Scale::MINOR;
         int rootNote = rootNotePtr ? *rootNotePtr : 0;
 
-        // Get display strings
         const char* noteName = NOTE_NAMES[rootNote % 12];
-        const char* scaleName = getScaleAbbrev(scale);
+        const char* scaleName = getScaleName(scale);
 
-        float rowHeight = box.size.y / 2;
+        // Build single-line string: "C# Minor"
+        char displayText[32];
+        snprintf(displayText, sizeof(displayText), "%s %s", noteName, scaleName);
 
-        // Scale character sizes based on available space
-        float noteCharW = 14.f;
-        float noteCharH = rowHeight - 6.f;
-        float scaleCharW = (box.size.x - 10.f) / 7.f;  // Fit up to 7 chars
-        float scaleCharH = rowHeight - 6.f;
+        // Background bar
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 2);
+        nvgFillColor(vg, Colors::displayBg());
+        nvgFill(vg);
+        nvgStrokeColor(vg, Colors::displayBorder());
+        nvgStrokeWidth(vg, 0.5f);
+        nvgStroke(vg);
 
-        // Root note (top row)
-        {
-            LEDSegmentDisplay noteDisp;
-            noteDisp.text = noteName;
-            noteDisp.charWidth = noteCharW;
-            noteDisp.charHeight = noteCharH;
-            noteDisp.charSpacing = 2.f;
-            noteDisp.box.size = Vec(box.size.x, rowHeight);
-            noteDisp.box.pos = Vec(0, 0);
-
-            nvgSave(vg);
-            nvgTranslate(vg, 0, 2);
-            noteDisp.draw(args);
-            nvgRestore(vg);
-        }
-
-        // Scale name (bottom row)
-        {
-            LEDSegmentDisplay scaleNameDisp;
-            scaleNameDisp.text = scaleName;
-            scaleNameDisp.charWidth = scaleCharW;
-            scaleNameDisp.charHeight = scaleCharH;
-            scaleNameDisp.charSpacing = 1.f;
-            scaleNameDisp.box.size = Vec(box.size.x, rowHeight);
-            scaleNameDisp.box.pos = Vec(0, rowHeight);
-
-            nvgSave(vg);
-            nvgTranslate(vg, 0, rowHeight + 2);
-            scaleNameDisp.draw(args);
-            nvgRestore(vg);
+        // Text - single line, centered
+        std::shared_ptr<Font> font = APP->window->loadFont(asset::system("res/fonts/DejaVuSans.ttf"));
+        if (font) {
+            nvgFontFaceId(vg, font->handle);
+            nvgFontSize(vg, 12);
+            nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+            nvgFillColor(vg, Colors::displayAccent());
+            nvgText(vg, box.size.x / 2, box.size.y / 2, displayText, nullptr);
         }
 
         OpaqueWidget::draw(args);
@@ -391,15 +392,9 @@ struct PianoRollDisplay : widget::OpaqueWidget {
 
     // Drag state
     bool isDragging = false;
-    int dragStartCol = -1;
-    int dragStartRow = -1;
+    int lastPaintedCol = -1;
     int dragNoteValue = -1;  // Note being painted (-1 for rest)
     int dragOctave = 0;
-
-    // Flash feedback for invalid clicks
-    float invalidFlashTimer = 0.f;
-    int invalidFlashCol = -1;
-    int invalidFlashRow = -1;
 
     // Which notes are "white keys" (Major scale intervals)
     static constexpr int WHITE_KEYS[] = {0, 2, 4, 5, 7, 9, 11};
@@ -490,11 +485,6 @@ struct PianoRollDisplay : widget::OpaqueWidget {
 
         clampViewOffset();
 
-        // Update flash timer
-        if (invalidFlashTimer > 0.f) {
-            invalidFlashTimer -= APP->window->getLastFrameDuration();
-        }
-
         // --- Draw Background Grid ---
         for (int row = 0; row < NUM_ROWS; row++) {
             int noteInOctave = row;  // 0 = C, 1 = C#, etc. (bottom to top)
@@ -505,16 +495,15 @@ struct PianoRollDisplay : widget::OpaqueWidget {
                 float x = visCol * cellWidth;
                 float y = b.size.y - (row + 1) * cellHeight;  // Flip Y (low notes at bottom)
 
-                // Cell background
+                // Cell background - in-scale rows are clearly clickable, out-of-scale are near-black
                 NVGcolor bgColor;
                 if (inScale) {
-                    // Scale notes: white/black key pattern
                     bgColor = isWhiteKey(noteInOctave)
-                        ? Colors::withAlpha(Colors::gray20(), 0.35f)
-                        : Colors::withAlpha(Colors::gray70(), 0.5f);
+                        ? nvgRGBA(0x3a, 0x3a, 0x3a, 0x80)
+                        : nvgRGBA(0x30, 0x30, 0x30, 0x80);
                 } else {
-                    // Non-scale notes: darker, less prominent
-                    bgColor = Colors::withAlpha(Colors::gray90(), 0.25f);
+                    // Dead zone - nearly black
+                    bgColor = nvgRGBA(0x10, 0x10, 0x10, 0x60);
                 }
 
                 // Dim steps beyond pattern length
@@ -526,14 +515,6 @@ struct PianoRollDisplay : widget::OpaqueWidget {
                 nvgRect(vg, x, y, cellWidth - 0.5f, cellHeight - 0.5f);
                 nvgFillColor(vg, bgColor);
                 nvgFill(vg);
-
-                // Flash invalid click feedback
-                if (invalidFlashTimer > 0.f && col == invalidFlashCol && row == invalidFlashRow) {
-                    nvgBeginPath(vg);
-                    nvgRect(vg, x, y, cellWidth - 0.5f, cellHeight - 0.5f);
-                    nvgFillColor(vg, Colors::withAlpha(Colors::red60(), invalidFlashTimer * 2.f));
-                    nvgFill(vg);
-                }
 
                 // Grid lines
                 nvgBeginPath(vg);
@@ -550,6 +531,23 @@ struct PianoRollDisplay : widget::OpaqueWidget {
                     nvgStrokeColor(vg, Colors::withAlpha(Colors::gray30(), 0.3f));
                     nvgStrokeWidth(vg, 1.0f);
                     nvgStroke(vg);
+                }
+            }
+        }
+
+        // --- Draw Note Name Labels on left edge ---
+        {
+            static const char* NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+            std::shared_ptr<Font> font = APP->window->loadFont(asset::system("res/fonts/ShareTechMono-Regular.ttf"));
+            if (font) {
+                nvgFontFaceId(vg, font->handle);
+                nvgFontSize(vg, 7);
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                nvgFillColor(vg, Colors::withAlpha(Colors::displayAccent(), 0.5f));
+                for (int row = 0; row < NUM_ROWS; row++) {
+                    if (!isSemitoneInScale(row, scale)) continue;
+                    float y = b.size.y - (row + 0.5f) * cellHeight;
+                    nvgText(vg, 1.5f, y, NOTE_NAMES[row], nullptr);
                 }
             }
         }
@@ -577,10 +575,10 @@ struct PianoRollDisplay : widget::OpaqueWidget {
                     noteWidth = cellWidth * 1.3f;
                 }
 
-                // Note color based on accent
+                // Note color based on accent (yellow accent per design language)
                 NVGcolor noteColor = step.accent
-                    ? Colors::withAlpha(Colors::emerald30(), 0.9f)
-                    : Colors::withAlpha(Colors::emerald50(), 0.7f);
+                    ? Colors::withAlpha(Colors::noteActive(), 0.9f)
+                    : Colors::withAlpha(Colors::noteNormal(), 0.7f);
 
                 // Draw note rectangle
                 nvgBeginPath(vg);
@@ -588,22 +586,22 @@ struct PianoRollDisplay : widget::OpaqueWidget {
                 nvgFillColor(vg, noteColor);
                 nvgFill(vg);
 
-                // Accent indicator (red border)
+                // Accent indicator (orange border)
                 if (step.accent) {
                     nvgBeginPath(vg);
                     nvgRoundedRect(vg, x + 0.5f, y + 0.5f, noteWidth, noteHeight, 2.0f);
-                    nvgStrokeColor(vg, Colors::red60());
+                    nvgStrokeColor(vg, Colors::accentOn());
                     nvgStrokeWidth(vg, 1.5f);
                     nvgStroke(vg);
                 }
 
-                // Slide indicator (yellow tail)
+                // Slide indicator (blue tail)
                 if (step.slide) {
                     nvgBeginPath(vg);
                     nvgMoveTo(vg, x + cellWidth - 2, y + noteHeight * 0.3f);
                     nvgLineTo(vg, x + cellWidth + cellWidth * 0.2f, y + noteHeight * 0.5f);
                     nvgLineTo(vg, x + cellWidth - 2, y + noteHeight * 0.7f);
-                    nvgFillColor(vg, Colors::yellow40());
+                    nvgFillColor(vg, Colors::slideOn());
                     nvgFill(vg);
                 }
 
@@ -626,17 +624,17 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         if (visiblePlayhead >= 0 && visiblePlayhead < VISIBLE_STEPS) {
             float x = visiblePlayhead * cellWidth;
 
-            // Playhead column highlight
+            // Playhead column highlight (white per DESIGN.md)
             nvgBeginPath(vg);
             nvgRect(vg, x, 0, cellWidth, b.size.y);
-            nvgFillColor(vg, Colors::withAlpha(Colors::blue60(), 0.2f));
+            nvgFillColor(vg, nvgRGBA(0xff, 0xff, 0xff, 0x33));
             nvgFill(vg);
 
             // Playhead line
             nvgBeginPath(vg);
             nvgMoveTo(vg, x, 0);
             nvgLineTo(vg, x, b.size.y);
-            nvgStrokeColor(vg, Colors::blue40());
+            nvgStrokeColor(vg, nvgRGB(0xff, 0xff, 0xff));
             nvgStrokeWidth(vg, 2.0f);
             nvgStroke(vg);
         }
@@ -675,7 +673,7 @@ struct PianoRollDisplay : widget::OpaqueWidget {
             for (int i = 0; i < numPages; i++) {
                 nvgBeginPath(vg);
                 nvgCircle(vg, startX + i * dotSpacing + 2, b.size.y - 4, 2);
-                nvgFillColor(vg, i == currentPage ? Colors::blue40() : Colors::withAlpha(Colors::gray60(), 0.5f));
+                nvgFillColor(vg, i == currentPage ? Colors::displayAccent() : Colors::withAlpha(Colors::gray60(), 0.5f));
                 nvgFill(vg);
             }
         }
@@ -683,7 +681,7 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         // --- Draw Border ---
         nvgBeginPath(vg);
         nvgRect(vg, 0, 0, b.size.x, b.size.y);
-        nvgStrokeColor(vg, Colors::gray60());
+        nvgStrokeColor(vg, Colors::displayBorder());
         nvgStrokeWidth(vg, 1.0f);
         nvgStroke(vg);
 
@@ -691,11 +689,18 @@ struct PianoRollDisplay : widget::OpaqueWidget {
     }
 
     void draw(const DrawArgs& args) override {
-        // Background
+        // Background (dark display area contrasts against light panel)
         nvgBeginPath(args.vg);
-        nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-        nvgFillColor(args.vg, Colors::gray100());
+        nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 3);
+        nvgFillColor(args.vg, Colors::displayBg());
         nvgFill(args.vg);
+
+        // Subtle border
+        nvgBeginPath(args.vg);
+        nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 3);
+        nvgStrokeColor(args.vg, Colors::displayBorder());
+        nvgStrokeWidth(args.vg, 1.0f);
+        nvgStroke(args.vg);
 
         OpaqueWidget::draw(args);
     }
@@ -754,62 +759,49 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         Scale scale = scalePtr ? *scalePtr : Scale::MINOR;
 
         if (e.action == GLFW_PRESS) {
-            // Read from display pattern for current state
             const SequenceStep& step = patternPtr->steps[col];
-            int currentSemitone = step.isRest() ? -1 : getNoteInScale(step.note, scale, 0, 0);
-            int currentDisplay = currentSemitone >= 0 ? ((currentSemitone % 12) + 12) % 12 : -1;
-
-            // Write to master pattern
+            bool hasNote = !step.isRest() && !masterPatternPtr->muted[col];
             MasterStep& masterStep = masterPatternPtr->steps[col];
 
-            if (currentDisplay == row && !masterPatternPtr->muted[col]) {
-                // Clicking same note - modify or toggle
+            // Modifier clicks: apply to existing note regardless of row
+            if (hasNote && (e.mods & (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL | GLFW_MOD_ALT))) {
                 if (e.mods & GLFW_MOD_SHIFT) {
-                    // Toggle accent: flip between always-on (0.0) and always-off (1.0)
                     masterStep.accentProb = (masterStep.accentProb < 0.5f) ? 1.0f : 0.0f;
                 } else if (e.mods & GLFW_MOD_CONTROL) {
-                    // Toggle slide: flip between always-on (0.0) and always-off (1.0)
                     masterStep.slideProb = (masterStep.slideProb < 0.5f) ? 1.0f : 0.0f;
                 } else if (e.mods & GLFW_MOD_ALT) {
-                    // Cycle octave: 0 -> 1 -> -1 -> 0
                     masterStep.octave = (masterStep.octave + 2) % 3 - 1;
-                } else {
-                    // Regular click on existing note - mute it (create rest)
-                    masterPatternPtr->muted[col] = true;
-                    dragNoteValue = -1;
                 }
             } else {
-                // Clicking different row or on a muted step - try to set new note
-                int newScaleDegree = semitoneToScaleDegree(row, scale);
+                // Plain click: place or remove note
+                int currentSemitone = step.isRest() ? -1 : getNoteInScale(step.note, scale, 0, 0);
+                int currentDisplay = currentSemitone >= 0 ? ((currentSemitone % 12) + 12) % 12 : -1;
 
-                if (newScaleDegree >= 0) {
-                    // Find the notePoolIndex for this scale degree
-                    int poolIndex = masterPatternPtr->findNotePoolIndex(newScaleDegree);
-                    masterStep.notePoolIndex = poolIndex;
-                    masterStep.octave = 0;
-                    // Reset accent/slide to neutral (will follow density knobs)
-                    masterStep.accentProb = 0.5f;
-                    masterStep.slideProb = 0.5f;
-                    // Unmute the step
-                    masterPatternPtr->muted[col] = false;
-                    dragNoteValue = newScaleDegree;
-                    dragOctave = 0;
+                if (hasNote && currentDisplay == row) {
+                    // Click on existing note's row — remove it
+                    masterPatternPtr->muted[col] = true;
+                    dragNoteValue = -1;
                 } else {
-                    // Invalid note (not in scale) - flash feedback
-                    invalidFlashTimer = 0.3f;
-                    invalidFlashCol = col;
-                    invalidFlashRow = row;
+                    // Try to place a note on this row
+                    int newScaleDegree = semitoneToScaleDegree(row, scale);
+                    if (newScaleDegree >= 0) {
+                        int poolIndex = masterPatternPtr->findNotePoolIndex(newScaleDegree);
+                        masterStep.notePoolIndex = poolIndex;
+                        masterStep.octave = 0;
+                        masterStep.accentProb = 0.5f;
+                        masterStep.slideProb = 0.5f;
+                        masterPatternPtr->muted[col] = false;
+                        dragNoteValue = newScaleDegree;
+                        dragOctave = 0;
+                    }
+                    // Out-of-scale row: silently ignore
                 }
             }
 
-            // Start drag
             isDragging = true;
-            dragStartCol = col;
-            dragStartRow = row;
+            lastPaintedCol = col;
 
-            // Trigger display refresh to show the edit
             triggerDisplayRefresh();
-
             e.consume(this);
         } else if (e.action == GLFW_RELEASE) {
             isDragging = false;
@@ -841,7 +833,7 @@ struct PianoRollDisplay : widget::OpaqueWidget {
         }
 
         int patternLength = patternLengthPtr ? *patternLengthPtr : 16;
-        if (col >= patternLength || col == dragStartCol) {
+        if (col >= patternLength || col == lastPaintedCol) {
             OpaqueWidget::onDragHover(e);
             return;
         }
@@ -857,14 +849,13 @@ struct PianoRollDisplay : widget::OpaqueWidget {
             int poolIndex = masterPatternPtr->findNotePoolIndex(dragNoteValue);
             masterStep.notePoolIndex = poolIndex;
             masterStep.octave = dragOctave;
-            masterStep.accentProb = 0.5f;  // Neutral - follows density
-            masterStep.slideProb = 0.5f;   // Neutral - follows density
+            masterStep.accentProb = 0.5f;
+            masterStep.slideProb = 0.5f;
             masterPatternPtr->muted[col] = false;
         }
 
-        dragStartCol = col;  // Update to prevent re-painting same cell
+        lastPaintedCol = col;
 
-        // Trigger display refresh to show the edit
         triggerDisplayRefresh();
 
         e.consume(this);
@@ -933,8 +924,8 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
 
     NVGcolor getLabelColor() const {
         switch (rowType) {
-            case RowType::ACCENT: return Colors::red60();
-            case RowType::SLIDE:  return Colors::yellow40();
+            case RowType::ACCENT: return Colors::accentOn();
+            case RowType::SLIDE:  return Colors::slideOn();
             case RowType::OCTAVE: return Colors::blue40();
         }
         return Colors::gray60();
@@ -969,11 +960,11 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
                 switch (rowType) {
                     case RowType::ACCENT:
                         isActive = !step.isRest() && step.accent;
-                        activeColor = Colors::red60();
+                        activeColor = Colors::accentOn();
                         break;
                     case RowType::SLIDE:
                         isActive = !step.isRest() && step.slide;
-                        activeColor = Colors::yellow40();
+                        activeColor = Colors::slideOn();
                         break;
                     case RowType::OCTAVE:
                         isActive = !step.isRest() && step.octave != 0;
@@ -1000,11 +991,11 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
                 nvgFill(vg);
             }
 
-            // Playhead highlight
+            // Playhead highlight (white per DESIGN.md)
             if (col == currentStep) {
                 nvgBeginPath(vg);
                 nvgRect(vg, x, 0, cellWidth, box.size.y);
-                nvgFillColor(vg, Colors::withAlpha(Colors::blue60(), 0.3f));
+                nvgFillColor(vg, nvgRGBA(0xff, 0xff, 0xff, 0x4d));
                 nvgFill(vg);
             }
         }
@@ -1020,9 +1011,10 @@ struct StepIndicatorDisplay : widget::OpaqueWidget {
     }
 
     void draw(const DrawArgs& args) override {
+        // Dark display background
         nvgBeginPath(args.vg);
-        nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-        nvgFillColor(args.vg, Colors::gray100());
+        nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 1);
+        nvgFillColor(args.vg, Colors::displayBg());
         nvgFill(args.vg);
 
         OpaqueWidget::draw(args);
@@ -1146,7 +1138,7 @@ struct StepNumberDisplay : widget::OpaqueWidget {
 
             NVGcolor textColor = col >= patternLength
                 ? Colors::withAlpha(Colors::gray60(), 0.3f)
-                : (col == currentStep ? Colors::blue40() : Colors::gray60());
+                : (col == currentStep ? Colors::displayAccent() : Colors::gray60());
 
             char num[4];
             snprintf(num, sizeof(num), "%d", col + 1);
@@ -1159,9 +1151,10 @@ struct StepNumberDisplay : widget::OpaqueWidget {
     }
 
     void draw(const DrawArgs& args) override {
+        // Dark display background
         nvgBeginPath(args.vg);
-        nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-        nvgFillColor(args.vg, Colors::gray100());
+        nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 1);
+        nvgFillColor(args.vg, Colors::displayBg());
         nvgFill(args.vg);
 
         OpaqueWidget::draw(args);
@@ -1185,12 +1178,12 @@ struct PageButton : widget::OpaqueWidget {
     void draw(const DrawArgs& args) override {
         NVGcontext* vg = args.vg;
 
-        // Button background
+        // Button background (light theme - subtle gray buttons)
         nvgBeginPath(vg);
         nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 2);
-        nvgFillColor(vg, pressed ? Colors::gray60() : Colors::gray80());
+        nvgFillColor(vg, pressed ? Colors::sectionBg() : Colors::panelBg());
         nvgFill(vg);
-        nvgStrokeColor(vg, Colors::gray60());
+        nvgStrokeColor(vg, Colors::gray30());
         nvgStrokeWidth(vg, 1);
         nvgStroke(vg);
 
@@ -1209,7 +1202,7 @@ struct PageButton : widget::OpaqueWidget {
             nvgLineTo(vg, cx + arrowSize, cy);
             nvgLineTo(vg, cx - arrowSize, cy + arrowSize);
         }
-        nvgStrokeColor(vg, Colors::gray20());
+        nvgStrokeColor(vg, Colors::gray100());
         nvgStrokeWidth(vg, 1.5f);
         nvgStroke(vg);
 
@@ -1262,20 +1255,20 @@ struct PageIndicator : widget::OpaqueWidget {
             float x = i * pageWidth + pageWidth / 2;
             float y = box.size.y / 2;
 
-            // Background for current page
+            // Background for current page (cyan display accent)
             if (i == currentPage) {
                 nvgBeginPath(vg);
                 nvgRoundedRect(vg, i * pageWidth + 1, 1, pageWidth - 2, box.size.y - 2, 2);
-                nvgFillColor(vg, Colors::blue60());
+                nvgFillColor(vg, Colors::displayAccent());
                 nvgFill(vg);
             }
 
             // Page number
             NVGcolor textColor;
             if (i == currentPage) {
-                textColor = Colors::gray20();
+                textColor = Colors::gray100();
             } else if (i <= maxPage) {
-                textColor = Colors::gray30();
+                textColor = Colors::gray70();
             } else {
                 textColor = Colors::withAlpha(Colors::gray60(), 0.4f);
             }

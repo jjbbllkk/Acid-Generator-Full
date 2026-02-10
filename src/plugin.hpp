@@ -7,4 +7,4 @@ using namespace rack;
 extern Plugin* pluginInstance;
 
 // Declare each module model (defined in each module's .cpp file)
-extern Model* modelAcidSeq;
+extern Model* modelAcidGen;
