@@ -36,7 +36,7 @@ struct AcidGen : Module {
 
     enum LightIds {
         LIGHT_GENERATE,
-        ENUMS(LIGHT_STEP, 16),  // Step indicator lights
+        ENUMS(LIGHT_STEP, 64),  // Step indicator lights (4 rows of 16)
         LIGHTS_LEN
     };
 
@@ -327,8 +327,8 @@ struct AcidGen : Module {
         generateLightBrightness *= 1.f - args.sampleTime * 4.f;
         lights[LIGHT_GENERATE].setBrightness(generateLightBrightness);
 
-        // Step lights (show current position in first 16 steps)
-        for (int i = 0; i < 16; i++) {
+        // Step lights (show full 64-step pattern)
+        for (int i = 0; i < 64; i++) {
             bool isCurrentStep = (currentStep == i);
             bool hasNote = (i < patternLength) && !displayPattern.steps[i].isRest();
 
@@ -696,10 +696,17 @@ struct AcidGenWidget : ModuleWidget {
         addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(76, 100)), module, AcidGen::OUTPUT_ACCENT));
         addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(88, 100)), module, AcidGen::OUTPUT_SLIDE));
 
-        // === Step Indicator LEDs (below outputs, yellow per design language) ===
-        for (int i = 0; i < 8; i++) {
-            addChild(createLightCentered<TinyLight<YellowLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 112)), module, AcidGen::LIGHT_STEP + i));
-            addChild(createLightCentered<TinyLight<YellowLight>>(mm2px(Vec(DISPLAY_X + 3 + i * 6.75f, 116)), module, AcidGen::LIGHT_STEP + 8 + i));
+        // === Step Indicator LEDs (4 rows of 16, spanning full rect34 width) ===
+        const float LED_START_X = 7.5f;
+        const float LED_SPACING_X = 5.83f;
+        const float LED_ROW_Y[] = {110.1f, 113.4f, 116.7f, 120.0f};
+
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 16; col++) {
+                int stepIndex = row * 16 + col;
+                float x = LED_START_X + col * LED_SPACING_X;
+                addChild(createLightCentered<TinyLight<YellowLight>>(mm2px(Vec(x, LED_ROW_Y[row])), module, AcidGen::LIGHT_STEP + stepIndex));
+            }
         }
     }
 
