@@ -1,5 +1,7 @@
 # ACID GENERATOR
 
+![Acid Generator module](docs/screenshot.png)
+
 **A deterministic, musically-aware acid bassline generator.**
 
 This is a fork of [drakh/acid-generator](https://github.com/drakh/acid-generator), heavily inspired by the [**STING by SKINNERBOX**](https://maxforlive.com/library/device/4260/sting-by-skinnerbox) Max for Live device.
