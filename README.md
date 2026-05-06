@@ -1,6 +1,8 @@
 # ACID GENERATOR
 
-<img src="docs/screenshot.png" alt="Acid Generator module" width="400">
+<p align="center">
+  <img src="docs/screenshot.png" alt="Acid Generator module" width="400">
+</p>
 
 **A deterministic, musically-aware acid bassline generator.**
 
