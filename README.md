@@ -30,26 +30,43 @@ Unlike standard random generators, this version focuses on **musical stability a
 ## Installation (VCV Rack)
 
 ### Pre-built (Recommended)
-1. Download the latest release for your platform from the [Releases](https://github.com/jjbbllkk/Acid-Generator-VCV-Port-Piano-Roll/releases) page
-2. Extract the `AcidGenerator` folder to your VCV Rack plugins directory:
-   - **macOS:** `~/Documents/Rack2/plugins/` or `~/Library/Application Support/Rack2/plugins-mac-arm64/` (Apple Silicon)
-   - **Windows:** `My Documents/Rack2/plugins/`
-   - **Linux:** `~/.Rack2/plugins/`
-3. Restart VCV Rack
-4. Find "Acid Generator" in the module browser under the "Vulpes79" brand
+
+Download the `.vcvplugin` matching your platform from the [Releases](https://github.com/jjbbllkk/Acid-Generator-Full/releases) page:
+
+| Platform | File |
+| --- | --- |
+| macOS (Apple Silicon) | `AcidGenerator-x.y.z-mac-arm64.vcvplugin` |
+| macOS (Intel)         | `AcidGenerator-x.y.z-mac-x64.vcvplugin`   |
+| Windows (64-bit)      | `AcidGenerator-x.y.z-win-x64.vcvplugin`   |
+| Linux (64-bit)        | `AcidGenerator-x.y.z-lin-x64.vcvplugin`   |
+
+Then either:
+
+- **Option A (easiest):** Open VCV Rack and choose **Library → Install Plugin from File…**, then select the downloaded `.vcvplugin`. Restart Rack.
+- **Option B (manual):** Place the `.vcvplugin` file in your Rack user plugins folder, then restart Rack:
+  - **macOS:** `~/Library/Application Support/Rack2/plugins-mac-arm64/` (Apple Silicon) or `…/plugins-mac-x64/` (Intel)
+  - **Windows:** `%LOCALAPPDATA%\Rack2\plugins-win-x64\`
+  - **Linux:** `~/.local/share/Rack2/plugins-lin-x64/`
+
+After restart, find **Acid Generator** in the module browser under the **Vulpes79** brand.
 
 ### Build from Source
-1. Clone this repository into your Rack SDK plugins folder:
+
+1. Clone the repository into your Rack SDK plugins folder:
    ```
    cd /path/to/Rack-SDK/plugins
-   git clone https://github.com/jjbbllkk/Acid-Generator-VCV-Port-Piano-Roll.git AcidGenerator
+   git clone https://github.com/jjbbllkk/Acid-Generator-Full.git AcidGenerator
    ```
 2. Build the plugin:
    ```
    cd AcidGenerator
-   make
+   make dist
    ```
-3. The built plugin will be in the `dist/` folder. Copy it to your plugins directory (see paths above).
+3. The packaged `.vcvplugin` will be in the `dist/` folder. Install it via VCV Rack's **Library → Install Plugin from File…** menu (or copy it into the appropriate `plugins-<os>-<arch>` folder shown above).
+
+### Cross-platform builds
+
+This repository ships a GitHub Actions workflow (`.github/workflows/build.yml`) that builds `.vcvplugin` artifacts for all four supported targets (`mac-arm64`, `mac-x64`, `win-x64`, `lin-x64`) on every push. Tagged releases (`v*`) are automatically attached to a GitHub Release.
 
 ## USAGE
 
