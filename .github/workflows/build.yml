@@ -17,11 +17,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
-            sdk-suffix: mac-x64
-          - os: macos-14
-            sdk-suffix: mac-arm64
-    runs-on: ${{ matrix.os }}
+          - sdk-suffix: mac-arm64
+            cross-compile: ""
+          - sdk-suffix: mac-x64
+            cross-compile: "x86_64-apple-darwin"
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,9 @@ jobs:
       - name: Build
         run: |
           export RACK_DIR="$PWD/Rack-SDK"
+          if [ -n "${{ matrix.cross-compile }}" ]; then
+            export CROSS_COMPILE="${{ matrix.cross-compile }}"
+          fi
           make dist -j"$(sysctl -n hw.ncpu)"
 
       - uses: actions/upload-artifact@v4
